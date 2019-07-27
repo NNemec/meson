@@ -851,7 +851,7 @@ class Backend:
         result = OrderedDict()
         # Get all targets used as test executables and arguments.
         for t in self.build.get_tests():
-            for arg in [ t.exe ] + t.cmd_args:
+            for arg in [t.exe] + t.cmd_args:
                 if hasattr(arg, 'held_object'):
                     arg = arg.held_object
                 if isinstance(arg, (build.CustomTarget, build.BuildTarget)):
