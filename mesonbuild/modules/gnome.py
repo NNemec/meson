@@ -1301,7 +1301,7 @@ This will become a hard error in the future.''')
             elif arg not in known_custom_target_kwargs:
                 raise MesonException(
                     'Mkenums does not take a %s keyword argument.' % (arg, ))
-        cmd = [self.interpreter.find_program_impl(['glib-mkenums', 'mkenums'])] + cmd
+        cmd = [self.interpreter.find_program_impl(['glib-mkenums', 'glib-mkenums.py', 'mkenums'])] + cmd
         custom_kwargs = {}
         for arg in known_custom_target_kwargs:
             if arg in kwargs:
@@ -1498,7 +1498,7 @@ G_END_DECLS'''
 
         new_genmarshal = mesonlib.version_compare(self._get_native_glib_version(state), '>= 2.53.3')
 
-        cmd = [self.interpreter.find_program_impl('glib-genmarshal')]
+        cmd = [self.interpreter.find_program_impl(['glib-genmarshal', 'glib-genmarshal.py'])]
         known_kwargs = ['internal', 'nostdinc', 'skip_source', 'stdinc',
                         'valist_marshallers', 'extra_args']
         known_custom_target_kwargs = ['build_always', 'depends',
