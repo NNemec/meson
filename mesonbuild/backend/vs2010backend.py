@@ -1257,7 +1257,8 @@ class Vs2010Backend(backends.Backend):
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
     def gen_regenproj(self, project_name, ofname):
-        root = ET.Element('Project', {'DefaultTargets': 'Build',
+        target_name = project_name
+        root = ET.Element('Project', {'DefaultTargets': "Build",
                                       'ToolsVersion': '4.0',
                                       'xmlns': 'http://schemas.microsoft.com/developer/msbuild/2003'})
         confitems = ET.SubElement(root, 'ItemGroup', {'Label': 'ProjectConfigurations'})
@@ -1294,7 +1295,7 @@ class Vs2010Backend(backends.Backend):
         intdir = ET.SubElement(direlem, 'IntDir')
         intdir.text = 'regen-temp\\'
         tname = ET.SubElement(direlem, 'TargetName')
-        tname.text = project_name
+        tname.text = target_name
 
         action = ET.SubElement(root, 'ItemDefinitionGroup')
         midl = ET.SubElement(action, 'Midl')
@@ -1316,8 +1317,8 @@ class Vs2010Backend(backends.Backend):
         ET.SubElement(root, 'ImportGroup', Label='ExtensionTargets')
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
-    def gen_testproj(self, target_name, ofname):
-        project_name = target_name
+    def gen_testproj(self, project_name, ofname):
+        target_name = project_name
         root = ET.Element('Project', {'DefaultTargets': "Build",
                                       'ToolsVersion': '4.0',
                                       'xmlns': 'http://schemas.microsoft.com/developer/msbuild/2003'})
@@ -1377,9 +1378,9 @@ class Vs2010Backend(backends.Backend):
         self.add_regen_dependency(root)
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
-    def gen_installproj(self, target_name, ofname):
+    def gen_installproj(self, project_name, ofname):
         self.create_install_data_files()
-        project_name = target_name
+        target_name = project_name
         root = ET.Element('Project', {'DefaultTargets': "Build",
                                       'ToolsVersion': '4.0',
                                       'xmlns': 'http://schemas.microsoft.com/developer/msbuild/2003'})
