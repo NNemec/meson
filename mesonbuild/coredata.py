@@ -356,6 +356,7 @@ class CoreData:
             'test': '3AC096D0-A1C2-E12C-1390-A8335801FDAB',
             'directory': '2150E333-8FDC-42A3-9474-1A3956D46DE8',
         }
+        self.buildtest_guid = str(uuid.uuid4()).upper()
         self.test_guid = str(uuid.uuid4()).upper()
         self.regen_guid = str(uuid.uuid4()).upper()
         self.install_guid = str(uuid.uuid4()).upper()

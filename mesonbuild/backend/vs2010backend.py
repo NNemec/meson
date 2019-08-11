@@ -177,6 +177,7 @@ class Vs2010Backend(backends.Backend):
         self.buildtype = self.environment.coredata.get_builtin_option('buildtype')
         sln_filename = os.path.join(self.environment.get_build_dir(), self.build.project_name + '.sln')
         projlist = self.generate_projects()
+        self.gen_buildtestproj('BUILD_TESTS', os.path.join(self.environment.get_build_dir(), 'BUILD_TESTS.vcxproj'))
         self.gen_testproj('RUN_TESTS', os.path.join(self.environment.get_build_dir(), 'RUN_TESTS.vcxproj'))
         self.gen_installproj('RUN_INSTALL', os.path.join(self.environment.get_build_dir(), 'RUN_INSTALL.vcxproj'))
         self.gen_regenproj('REGEN', os.path.join(self.environment.get_build_dir(), 'REGEN.vcxproj'))
@@ -328,6 +329,11 @@ class Vs2010Backend(backends.Backend):
                     if prj[0] in default_projlist:
                         default_projlist[dep] = target
 
+            buildtest_line = prj_templ % (self.environment.coredata.lang_guids['default'],
+                                          'BUILD_TESTS', 'BUILD_TESTS.vcxproj',
+                                          self.environment.coredata.buildtest_guid)
+            ofile.write(buildtest_line)
+            ofile.write('EndProject\n')
             test_line = prj_templ % (self.environment.coredata.lang_guids['default'],
                                      'RUN_TESTS', 'RUN_TESTS.vcxproj',
                                      self.environment.coredata.test_guid)
@@ -370,6 +376,9 @@ class Vs2010Backend(backends.Backend):
                     ofile.write('\t\t{%s}.%s|%s.Build.0 = %s|%s\n' %
                                 (p[2], self.buildtype, self.platform,
                                  self.buildtype, self.platform))
+            ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
+                        (self.environment.coredata.buildtest_guid, self.buildtype,
+                         self.platform, self.buildtype, self.platform))
             ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
                         (self.environment.coredata.test_guid, self.buildtype,
                          self.platform, self.buildtype, self.platform))
@@ -1315,6 +1324,59 @@ class Vs2010Backend(backends.Backend):
                               msg='Checking whether solution needs to be regenerated.')
         ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.targets')
         ET.SubElement(root, 'ImportGroup', Label='ExtensionTargets')
+        self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
+
+    def gen_buildtestproj(self, project_name, ofname):
+        target_name = project_name
+        root = ET.Element('Project', {'DefaultTargets': "Build",
+                                      'ToolsVersion': '4.0',
+                                      'xmlns': 'http://schemas.microsoft.com/developer/msbuild/2003'})
+        confitems = ET.SubElement(root, 'ItemGroup', {'Label': 'ProjectConfigurations'})
+        prjconf = ET.SubElement(confitems, 'ProjectConfiguration',
+                                {'Include': self.buildtype + '|' + self.platform})
+        p = ET.SubElement(prjconf, 'Configuration')
+        p.text = self.buildtype
+        pl = ET.SubElement(prjconf, 'Platform')
+        pl.text = self.platform
+        globalgroup = ET.SubElement(root, 'PropertyGroup', Label='Globals')
+        guidelem = ET.SubElement(globalgroup, 'ProjectGuid')
+        guidelem.text = '{%s}' % self.environment.coredata.buildtest_guid
+        kw = ET.SubElement(globalgroup, 'Keyword')
+        kw.text = self.platform + 'Proj'
+        p = ET.SubElement(globalgroup, 'Platform')
+        p.text = self.platform
+        pname = ET.SubElement(globalgroup, 'ProjectName')
+        pname.text = project_name
+        if self.windows_target_platform_version:
+            ET.SubElement(globalgroup, 'WindowsTargetPlatformVersion').text = self.windows_target_platform_version
+        ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.Default.props')
+        type_config = ET.SubElement(root, 'PropertyGroup', Label='Configuration')
+        ET.SubElement(type_config, 'ConfigurationType')
+        ET.SubElement(type_config, 'CharacterSet').text = 'MultiByte'
+        ET.SubElement(type_config, 'UseOfMfc').text = 'false'
+        if self.platform_toolset:
+            ET.SubElement(type_config, 'PlatformToolset').text = self.platform_toolset
+        ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.props')
+        direlem = ET.SubElement(root, 'PropertyGroup')
+        fver = ET.SubElement(direlem, '_ProjectFileVersion')
+        fver.text = self.project_file_version
+        outdir = ET.SubElement(direlem, 'OutDir')
+        outdir.text = '.\\'
+        intdir = ET.SubElement(direlem, 'IntDir')
+        intdir.text = 'buildtest-temp\\'
+        tname = ET.SubElement(direlem, 'TargetName')
+        tname.text = target_name
+
+        action = ET.SubElement(root, 'ItemDefinitionGroup')
+        midl = ET.SubElement(action, 'Midl')
+        ET.SubElement(midl, "AdditionalIncludeDirectories").text = '%(AdditionalIncludeDirectories)'
+        ET.SubElement(midl, "OutputDirectory").text = '$(IntDir)'
+        ET.SubElement(midl, 'HeaderFileName').text = '%(Filename).h'
+        ET.SubElement(midl, 'TypeLibraryName').text = '%(Filename).tlb'
+        ET.SubElement(midl, 'InterfaceIdentifierFilename').text = '%(Filename)_i.c'
+        ET.SubElement(midl, 'ProxyFileName').text = '%(Filename)_p.c'
+        ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.targets')
+        self.add_regen_dependency(root)
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
     def gen_testproj(self, project_name, ofname):

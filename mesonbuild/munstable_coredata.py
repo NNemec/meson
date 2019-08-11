@@ -67,7 +67,7 @@ def run(options):
         if k in ('backend_options', 'base_options', 'builtins', 'compiler_options', 'user_options'):
             # use `meson configure` to view these
             pass
-        elif k in ['install_guid', 'test_guid', 'regen_guid']:
+        elif k in ['install_guid', 'buildtest_guid', 'test_guid', 'regen_guid']:
             if all_backends or backend.startswith('vs'):
                 print(k + ': ' + v)
         elif k == 'target_guids':
