@@ -125,9 +125,14 @@ def get_command_filter_for_dir(backend, builddir):
     Visual Studio backend needs to be given the solution to build
     '''
     if backend is Backend.vs:
-        sln_path = glob(os.path.join(builddir, '*.sln'))[0]
-        sln_name = os.path.split(sln_path)[-1]
-        return lambda cmd: [sln_name if w == '*.sln' else w for w in cmd]
+        def command_filter(command):
+            for w in command:
+                if w.endswith(".vcxproj"):
+                    return command
+            sln_path = glob(os.path.join(builddir, '*.sln'))[0]
+            sln_name = os.path.split(sln_path)[-1]
+            return command + [ sln_name ]
+        return command_filter
 
     return lambda x: x
 
@@ -164,10 +169,10 @@ def get_backend_commands(backend, debug=False):
     install_cmd = []
     uninstall_cmd = []
     if backend is Backend.vs:
-        cmd = ['msbuild', '*.sln'] # '*.sln' will be replaced by actual name before Popen
-        clean_cmd = ['msbuild', '*.sln', '-target:Clean']
-        buildtests_cmd = ['msbuild', 'BUILD_TESTS.vcxproj']
-        test_cmd = ['msbuild', 'RUN_TESTS.vcxproj']
+        cmd = ['msbuild']
+        clean_cmd = cmd + ['/target:Clean']
+        buildtests_cmd = cmd + ['BUILD_TESTS.vcxproj']
+        test_cmd = cmd + ['RUN_TESTS.vcxproj']
     elif backend is Backend.xcode:
         cmd = ['xcodebuild']
         # In Xcode9 new build system's clean command fails when using a custom build directory.
