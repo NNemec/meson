@@ -462,6 +462,7 @@ def gather_tests(testdir: Path) -> List[Path]:
     test_names = [t.name for t in testdir.glob('*') if t.is_dir()]
     test_names = [t for t in test_names if not t.startswith('.')] # Filter non-tests files (dot files, etc)
     test_nums = [(int(t.split()[0]), t) for t in test_names]
+    test_nums = [ t for t in test_nums if t[0] in [133]] # ,192] ]
     test_nums.sort()
     tests = [testdir / t[1] for t in test_nums]
     return tests
@@ -685,6 +686,8 @@ def _run_tests(all_tests, log_name_base, failfast, extra_args):
     failing_tests = 0
     skipped_tests = 0
     commands = (compile_commands, clean_commands, buildtests_commands, install_commands, uninstall_commands)
+
+    multiprocessing.set_start_method('spawn', True)
 
     try:
         # This fails in some CI environments for unknown reasons.
