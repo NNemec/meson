@@ -176,12 +176,12 @@ class Vs2010Backend(backends.Backend):
             raise MesonException('Unsupported Visual Studio platform: ' + target_machine)
         self.buildtype = self.environment.coredata.get_builtin_option('buildtype')
         sln_filename = os.path.join(self.environment.get_build_dir(), self.build.project_name + '.sln')
-        projlist = self.generate_projects()
+        self.generate_projects()
         self.gen_buildtestproj('BUILD_TESTS', os.path.join(self.environment.get_build_dir(), 'BUILD_TESTS.vcxproj'))
         self.gen_testproj('RUN_TESTS', os.path.join(self.environment.get_build_dir(), 'RUN_TESTS.vcxproj'))
         self.gen_installproj('RUN_INSTALL', os.path.join(self.environment.get_build_dir(), 'RUN_INSTALL.vcxproj'))
         self.gen_regenproj('REGEN', os.path.join(self.environment.get_build_dir(), 'REGEN.vcxproj'))
-        self.generate_solution(sln_filename, projlist)
+        self.generate_solution(sln_filename)
         self.generate_regen_info()
         Vs2010Backend.touch_regen_timestamp(self.environment.get_build_dir())
 
@@ -298,7 +298,7 @@ class Vs2010Backend(backends.Backend):
                 ofile.write(prj_line)
                 ofile.write('EndProject\n')
 
-    def generate_solution(self, sln_filename, projlist):
+    def generate_solution(self, sln_filename):
         default_projlist = self.get_build_by_default_targets()
         sln_filename_tmp = sln_filename + '~'
         with open(sln_filename_tmp, 'w', encoding='utf-8') as ofile:
@@ -306,7 +306,7 @@ class Vs2010Backend(backends.Backend):
                         'Version 11.00\n')
             ofile.write('# Visual Studio ' + self.vs_version + '\n')
             prj_templ = 'Project("{%s}") = "%s", "%s", "{%s}"\n'
-            for prj in projlist:
+            for prj in self.projlist:
                 coredata = self.environment.coredata
                 if coredata.get_builtin_option('layout') == 'mirror':
                     self.generate_solution_dirs(ofile, prj[1].parents)
@@ -365,7 +365,7 @@ class Vs2010Backend(backends.Backend):
                         (self.environment.coredata.regen_guid, self.buildtype,
                          self.platform, self.buildtype, self.platform))
             # Create the solution configuration
-            for p in projlist:
+            for p in self.projlist:
                 # Add to the list of projects in this solution
                 ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
                             (p[2], self.buildtype, self.platform,
@@ -392,7 +392,7 @@ class Vs2010Backend(backends.Backend):
             if self.subdirs:
                 ofile.write('\tGlobalSection(NestedProjects) = '
                             'preSolution\n')
-                for p in projlist:
+                for p in self.projlist:
                     if p[1].parent != PurePath('.'):
                         ofile.write("\t\t{%s} = {%s}\n" % (p[2], self.subdirs[p[1].parent][0]))
                 for subdir in self.subdirs.values():
@@ -426,7 +426,7 @@ class Vs2010Backend(backends.Backend):
         if startup_idx:
             projlist = [projlist[startup_idx]] + projlist[0:startup_idx] + projlist[startup_idx + 1:-1]
 
-        return projlist
+        self.projlist = projlist
 
     def split_sources(self, srclist):
         sources = []
