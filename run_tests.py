@@ -169,10 +169,10 @@ def get_backend_commands(backend, debug=False):
     install_cmd = []
     uninstall_cmd = []
     if backend is Backend.vs:
-        cmd = ['msbuild']
-        clean_cmd = cmd + ['/target:Clean']
-        buildtests_cmd = cmd + ['BUILD_TESTS.vcxproj']
-        test_cmd = cmd + ['RUN_TESTS.vcxproj']
+        cmd = ['msbuild', '-target:REGEN']
+        clean_cmd = ['msbuild', '-target:Clean']
+        buildtests_cmd = ['msbuild', '-target:BUILD_TESTS']
+        test_cmd = ['msbuild', 'RUN_TESTS.vcxproj']
     elif backend is Backend.xcode:
         cmd = ['xcodebuild']
         # In Xcode9 new build system's clean command fails when using a custom build directory.

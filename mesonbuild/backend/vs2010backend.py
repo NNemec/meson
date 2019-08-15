@@ -379,6 +379,9 @@ class Vs2010Backend(backends.Backend):
             ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
                         (self.environment.coredata.buildtest_guid, self.buildtype,
                          self.platform, self.buildtype, self.platform))
+            ofile.write('\t\t{%s}.%s|%s.Build.0 = %s|%s\n' %
+                        (self.environment.coredata.buildtest_guid, self.buildtype,
+                         self.platform, self.buildtype, self.platform))
             ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
                         (self.environment.coredata.test_guid, self.buildtype,
                          self.platform, self.buildtype, self.platform))
