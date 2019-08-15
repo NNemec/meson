@@ -42,7 +42,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, CancelledError
 import re
 from run_tests import get_fake_options, run_configure, get_meson_script
-from run_tests import get_backend_commands, get_backend_args_for_dir, Backend
+from run_tests import get_backend_commands, get_command_filter_for_dir, Backend
 from run_tests import ensure_backend_detects_changes
 from run_tests import guess_backend
 
@@ -395,9 +395,9 @@ def _run_test(testdir, test_build_dir, install_dir, extra_args, compiler, backen
     ensure_backend_detects_changes(backend)
     os.utime(os.path.join(testdir, 'meson.build'))
     # Build with subprocess
-    dir_args = get_backend_args_for_dir(backend, test_build_dir)
+    cmd_filt = get_command_filter_for_dir(backend, test_build_dir)
     build_start = time.time()
-    pc, o, e = Popen_safe(compile_commands + dir_args, cwd=test_build_dir)
+    pc, o, e = Popen_safe(cmd_filt(compile_commands), cwd=test_build_dir)
     build_time = time.time() - build_start
     stdo += o
     stde += e
@@ -409,7 +409,7 @@ def _run_test(testdir, test_build_dir, install_dir, extra_args, compiler, backen
         return TestResult('Compiling source code failed.', BuildStep.build, stdo, stde, mesonlog, gen_time, build_time)
     # Build tests with subprocess
     build_start = time.time()
-    pc, o, e = Popen_safe(buildtests_commands + dir_args, cwd=test_build_dir)
+    pc, o, e = Popen_safe(cmd_filt(buildtests_commands), cwd=test_build_dir)
     build_time = time.time() - build_start
     stdo += o
     stde += e
@@ -441,14 +441,14 @@ def _run_test(testdir, test_build_dir, install_dir, extra_args, compiler, backen
         env = os.environ.copy()
         env['DESTDIR'] = install_dir
         # Install with subprocess
-        pi, o, e = Popen_safe(install_commands, cwd=test_build_dir, env=env)
+        pi, o, e = Popen_safe(cmd_filt(install_commands), cwd=test_build_dir, env=env)
         stdo += o
         stde += e
         if pi.returncode != 0:
             return TestResult('Running install failed.', BuildStep.install, stdo, stde, mesonlog, gen_time, build_time, test_time)
     # Clean with subprocess
     env = os.environ.copy()
-    pi, o, e = Popen_safe(clean_commands + dir_args, cwd=test_build_dir, env=env)
+    pi, o, e = Popen_safe(cmd_filt(clean_commands), cwd=test_build_dir, env=env)
     stdo += o
     stde += e
     if pi.returncode != 0:
@@ -845,21 +845,21 @@ def check_meson_commands_work():
         if pc.returncode != 0:
             raise RuntimeError('Failed to configure {!r}:\n{}\n{}'.format(testdir, e, o))
         print('Checking that building works...')
-        dir_args = get_backend_args_for_dir(backend, build_dir)
-        pc, o, e = Popen_safe(compile_commands + dir_args, cwd=build_dir)
+        cmd_filt = get_command_filter_for_dir(backend, build_dir)
+        pc, o, e = Popen_safe(cmd_filt(compile_commands), cwd=build_dir)
         if pc.returncode != 0:
             raise RuntimeError('Failed to build {!r}:\n{}\n{}'.format(testdir, e, o))
         print('Checking that building tests works...')
-        pc, o, e = Popen_safe(buildtests_commands, cwd=build_dir)
+        pc, o, e = Popen_safe(cmd_filt(buildtests_commands), cwd=build_dir)
         if pc.returncode != 0:
             raise RuntimeError('Failed to build tests {!r}:\n{}\n{}'.format(testdir, e, o))
         print('Checking that testing works...')
-        pc, o, e = Popen_safe(test_commands, cwd=build_dir)
+        pc, o, e = Popen_safe(cmd_filt(test_commands), cwd=build_dir)
         if pc.returncode != 0:
             raise RuntimeError('Failed to test {!r}:\n{}\n{}'.format(testdir, e, o))
         if install_commands:
             print('Checking that installing works...')
-            pc, o, e = Popen_safe(install_commands, cwd=build_dir)
+            pc, o, e = Popen_safe(cmd_filt(install_commands), cwd=build_dir)
             if pc.returncode != 0:
                 raise RuntimeError('Failed to install {!r}:\n{}\n{}'.format(testdir, e, o))
 

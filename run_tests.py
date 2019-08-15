@@ -120,14 +120,16 @@ def get_meson_script():
         return meson_cmd
     raise RuntimeError('Could not find {!r} or a meson in PATH'.format(meson_script))
 
-def get_backend_args_for_dir(backend, builddir):
+def get_command_filter_for_dir(backend, builddir):
     '''
     Visual Studio backend needs to be given the solution to build
     '''
     if backend is Backend.vs:
-        sln_name = glob(os.path.join(builddir, '*.sln'))[0]
-        return [os.path.split(sln_name)[-1]]
-    return []
+        sln_path = glob(os.path.join(builddir, '*.sln'))[0]
+        sln_name = os.path.split(sln_path)[-1]
+        return lambda cmd: [sln_name if w == '*.sln' else w for w in cmd]
+
+    return lambda x: x
 
 def find_vcxproj_with_target(builddir, target):
     import re, fnmatch
@@ -145,11 +147,8 @@ def find_vcxproj_with_target(builddir, target):
     raise RuntimeError('No vcxproj matching {!r} in {!r}'.format(p, builddir))
 
 def get_builddir_target_args(backend, builddir, target):
-    dir_args = []
-    if not target:
-        dir_args = get_backend_args_for_dir(backend, builddir)
     if target is None:
-        return dir_args
+        return []
     if backend is Backend.vs:
         vcxproj = find_vcxproj_with_target(builddir, target)
         target_args = [vcxproj]
@@ -159,16 +158,16 @@ def get_builddir_target_args(backend, builddir, target):
         target_args = [target]
     else:
         raise AssertionError('Unknown backend: {!r}'.format(backend))
-    return target_args + dir_args
+    return target_args
 
 def get_backend_commands(backend, debug=False):
     install_cmd = []
     uninstall_cmd = []
     if backend is Backend.vs:
-        cmd = ['msbuild']
-        clean_cmd = cmd + ['/target:Clean']
-        buildtests_cmd = cmd + ['BUILD_TESTS.vcxproj']
-        test_cmd = cmd + ['RUN_TESTS.vcxproj']
+        cmd = ['msbuild', '*.sln'] # '*.sln' will be replaced by actual name before Popen
+        clean_cmd = ['msbuild', '*.sln', '-target:Clean']
+        buildtests_cmd = ['msbuild', 'BUILD_TESTS.vcxproj']
+        test_cmd = ['msbuild', 'RUN_TESTS.vcxproj']
     elif backend is Backend.xcode:
         cmd = ['xcodebuild']
         # In Xcode9 new build system's clean command fails when using a custom build directory.

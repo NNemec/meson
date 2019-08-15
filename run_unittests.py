@@ -65,7 +65,7 @@ from run_tests import (
     Backend, FakeBuild, FakeCompilerOptions,
     ensure_backend_detects_changes, exe_suffix, get_backend_commands,
     get_builddir_target_args, get_fake_env, get_fake_options, get_meson_script,
-    run_configure_inprocess, run_mtest_inprocess
+    get_command_filter_for_dir, run_configure_inprocess, run_mtest_inprocess
 )
 
 
@@ -1354,11 +1354,13 @@ class BasePlatformTests(unittest.TestCase):
         # Add arguments for building the target (if specified),
         # and using the build dir (if required, with VS)
         args = get_builddir_target_args(self.backend, self.builddir, target)
-        return self._run(self.build_command + args + extra_args, workdir=self.builddir, override_envvars=override_envvars)
+        cmd_filt = get_command_filter_for_dir(self.backend, self.builddir)
+        return self._run(cmd_filt(self.build_command + args + extra_args), workdir=self.builddir, override_envvars=override_envvars)
 
     def clean(self, *, override_envvars=None):
         dir_args = get_builddir_target_args(self.backend, self.builddir, None)
-        self._run(self.clean_command + dir_args, workdir=self.builddir, override_envvars=override_envvars)
+        cmd_filt = get_command_filter_for_dir(self.backend, self.builddir)
+        self._run(cmd_filt(self.clean_command + dir_args), workdir=self.builddir, override_envvars=override_envvars)
 
     def run_tests(self, *, inprocess=False, override_envvars=None):
         self._run(self.buildtests_command, workdir=self.builddir, override_envvars=override_envvars)
