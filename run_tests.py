@@ -131,7 +131,7 @@ def get_command_filter_for_dir(backend, builddir):
                     return command
             sln_path = glob(os.path.join(builddir, '*.sln'))[0]
             sln_name = os.path.split(sln_path)[-1]
-            return command + [ sln_name ]
+            return command + [sln_name]
         return command_filter
 
     return lambda x: x
