@@ -1377,6 +1377,10 @@ class Vs2010Backend(backends.Backend):
         ET.SubElement(midl, 'ProxyFileName').text = '%(Filename)_p.c'
         ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.targets')
         self.add_regen_dependency(root)
+        test_targets = self.get_test_targets()
+        for proj in self.projlist:
+            if proj[0] in test_targets:
+                self.add_project_reference(root, str(proj[1]), proj[2])
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
     def gen_testproj(self, project_name, ofname):
