@@ -1385,21 +1385,10 @@ class Vs2010Backend(backends.Backend):
         ET.SubElement(midl, 'ProxyFileName').text = '%(Filename)_p.c'
         ET.SubElement(root, 'Import', Project=r'$(VCTargetsPath)\Microsoft.Cpp.targets')
         self.add_regen_dependency(root)
-
         test_targets = self.get_test_targets()
-        rec_targets = test_targets.copy()
-
-        for test_target in test_targets.values():
-            target_dict = {test_target.get_id(): test_target}
-            recursive_deps = self.get_target_deps(
-                target_dict, recursive=True)
-            for dep, target in recursive_deps.items():
-                rec_targets[dep] = target
-
         for proj in self.projlist:
-            if proj[0] in rec_targets:
+            if proj[0] in test_targets:
                 self.add_project_reference(root, str(proj[1]), proj[2])
-
         self._prettyprint_vcxproj_xml(ET.ElementTree(root), ofname)
 
     def gen_testproj(self, project_name, ofname):
