@@ -266,10 +266,15 @@ class Vs2010Backend(backends.Backend):
                         all_deps[gendep.get_id()] = gendep
                     elif isinstance(gendep, build.CustomTargetIndex):
                         all_deps[gendep.target.get_id()] = gendep.target
-                    else:
-                        gen_exe = gendep.generator.get_exe()
+                    elif isinstance(gendep, build.GeneratedList):
+                        generator = gendep.get_generator()
+                        for dep in generator.depends:
+                            all_deps[dep.get_id()] = dep
+                        gen_exe = generator.get_exe()
                         if isinstance(gen_exe, build.Executable):
                             all_deps[gen_exe.get_id()] = gen_exe
+                    else:
+                        raise MesonException('Unknown target type for generated source %s' % gendep)
             else:
                 raise MesonException('Unknown target type for target %s' % target)
         if not t or not recursive:
