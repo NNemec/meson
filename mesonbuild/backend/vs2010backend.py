@@ -305,6 +305,7 @@ class Vs2010Backend(backends.Backend):
 
     def generate_solution(self, sln_filename):
         default_projlist = self.get_build_by_default_targets()
+        tests_projlist = self.get_test_targets()
         sln_filename_tmp = sln_filename + '~'
         with open(sln_filename_tmp, 'w', encoding='utf-8') as ofile:
             ofile.write('Microsoft Visual Studio Solution File, Format '
@@ -325,14 +326,18 @@ class Vs2010Backend(backends.Backend):
                     self.environment.coredata.lang_guids[lang],
                     prj[0], prj[1], prj[2])
                 ofile.write(prj_line)
+                ofile.write('EndProject\n')
+
+                # Collect recursive deps
                 target_dict = {target.get_id(): target}
-                # Get recursive deps
                 recursive_deps = self.get_target_deps(
                     target_dict, recursive=True)
-                ofile.write('EndProject\n')
-                for dep, target in recursive_deps.items():
-                    if prj[0] in default_projlist:
+                if prj[0] in default_projlist:
+                    for dep, target in recursive_deps.items():
                         default_projlist[dep] = target
+                if prj[0] in test_targets:
+                    for dep, target in recursive_deps.items():
+                        test_targets[dep] = target
 
             buildtest_line = prj_templ % (self.environment.coredata.lang_guids['default'],
                                           'BUILD_TESTS', 'BUILD_TESTS.vcxproj',
@@ -375,7 +380,7 @@ class Vs2010Backend(backends.Backend):
                 ofile.write('\t\t{%s}.%s|%s.ActiveCfg = %s|%s\n' %
                             (p[2], self.buildtype, self.platform,
                              self.buildtype, self.platform))
-                if p[0] in default_projlist and \
+                if (p[0] in default_projlist or p[0] in tests_projlist) and \
                    not isinstance(self.build.targets[p[0]], build.RunTarget):
                     # Add to the list of projects to be built
                     ofile.write('\t\t{%s}.%s|%s.Build.0 = %s|%s\n' %
